@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<head>
+    <title>NYC</title>
+    <link rel="stylesheet" href="https://d19vzq90twjlae.cloudfront.net/leaflet-0.7/leaflet.css" />
+    <script type="text/javascript" src="../lib/d3.v5.min.js"></script>
+    <script type="text/javascript" src="../lib/topojson.v2.min.js"></script>
+    <script type="text/javascript" src="../lib/d3-simple-slider.min.js"></script>
+    <script type="text/javascript" src="../lib/d3-tip.min.js"></script>
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+    <script src="https://unpkg.com/d3-simple-slider"></script>
+    <!-- <script src="../p5.min.js"></script> -->
+    <script src="https://d19vzq90twjlae.cloudfront.net/leaflet-0.7/leaflet.js"></script>
+    <link
+      rel="stylesheet"
+      href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css"
+      integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO"
+      crossorigin="anonymous"
+    />
+    <style>
+
+
+        #map {
+            position: absolute;
+            top:0;
+            bottom: 0;
+            right: 0;
+            width: 70.0%;
+            height: 90.0%;
+            top: 10%;
+        }
+    #block {
+        position: absolute;
+        left:0
+        top:0%;
+        width:0%;
+        max-width:0%;
+        max-height:0%;
+        margin: auto;
+
+    }
+
+        .d3-tip{
+            line-height: 1;
+            font-family: sans-serif;
+            font-size:12px;
+            padding: 4px;
+            background: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            border-radius: 4px;
+        }
+
+
+        .d3-tips{
+
+            border-radius: 40px;
+        }
+
+
+
+        .slidecontainer {
+          width: 100%;
+        }
+
+        .slider {
+          -webkit-appearance: none;
+          width: 100%;
+          height: 25px;
+          background: #d3d3d3;
+          outline: none;
+          opacity: 0.7;
+          -webkit-transition: .2s;
+          transition: opacity .2s;
+        }
+
+        .slider:hover {
+          opacity: 1;
+        }
+
+        .slider::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          appearance: none;
+          width: 25px;
+          height: 25px;
+          background: #4CAF50;
+          cursor: pointer;
+        }
+
+        .slider::-moz-range-thumb {
+          width: 25px;
+          height: 25px;
+          background: #4CAF50;
+          cursor: pointer;
+        }
+
+  </style>
+
+</head>
+
+<body>
+
+<!-- Header and sliders web layout  -->
+  <div id="map"></div>
+  <h2>Final Project CSE6242 - Interactive Neighborhood Map</h2>
+  <p> <mark> Highlight a county to see further details..</mark></p></div>
+
+      <div class="row align-items-center">
+        <div class="col-sm-2"><h5>School Importance</h5></div></div>
+</div>
+  <div class="col-sm-3"><div id="slider-simple"></div></div>
+  <div class="row align-items-center">
+    <div class="col-sm-2"><h5>Price Limit</h5></div></div>
+    <div class="row align-items-center">
+      <!-- <div class="col-sm-2"><p id="value-step"></p></div> -->
+      <div class="col-sm"><div id="slider-step"></div></div>
+    </div>
+  <object id="conv1" type="image/svg+xml" data="http://mathsbeauty.esy.es/1.svg"></object>
+      <button><span>Refresh Map</span></button>
+      </div>
+      <div class="col-sm-2"><h5>             </h5></div></div>
+            <div class="col-sm-2"><h5>             </h5></div></div>
+                  <div class="col-sm-2"><h5>             </h5></div></div>
+      <div class="col-sm-2"><h5>             </h5></div></div>
+            <div class="col-sm-2"><h5>             </h5></div></div>
+                  <div class="col-sm-2"><h6><b>Top Neighborhoods:</b></h6></div></div>
+                  <div class="col-sm-2"><h5>             </h5></div></div>
+
+    <div class="col-sm-2"><h6>             </h6></div></div>
+    <div class="col-sm-2"><h6>             </h6></div></div>
+  <div class="col-sm-2"><p id="score1"></p></div>
+      <div class="col-sm-2"><h8>             </h8></div></div>
+      <div class="col-sm-2"><p id="score2"></p></div>
+          <div class="col-sm-2"><h8>             </h8></div></div>
+          <div class="col-sm-2"><p id="score3"></p></div>
+              <div class="col-sm-2"><h8>             </h8></div></div>
+              <div class="col-sm-2"><p id="score4"></p></div>
+                  <div class="col-sm-2"><h8>             </h8></div></div>
+                  <div class="col-sm-2"><p id="score5"></p></div>
+                      <div class="col-sm-2"><h8>             </h8></div></div>
+  <script>
+
+
+
+
+  // Refresh map on click
+  document.querySelector("button").addEventListener("click", function() {
+
+    svg.remove();
+     MapMake()
+  }, false);
+
+        var setBudget = 0
+
+        //Create map and set starting location and zoom level with Leaflet
+        var map = L.map('map', {center:[40.730611, -73.935242], zoom: 11 });
+
+        //Add credit to bottom left corner
+        mapLink = '<a href="http://openstreetmap.org">OpenStreetMap</a>';
+        L.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+            {
+            attribution: '&copy; ' + mapLink + ' Contributors',
+            maxZoom: 18,
+          }).addTo(map);
+
+        //Initialize SVG from map
+        map._initPathRoot()
+        var svg = d3.select(map.getPanes().overlayPane).append("svg"),
+            g = svg.append("g").attr("class", "leaflet-zoom-hide");
+
+        //Load data
+        var data_sources = [
+            d3.json("./data/borders.json"),
+            d3.dsv(",", "./data/school_quality_rating.csv"),
+            d3.dsv(",", "./data/pricedata.csv"),
+        ]
+        Promise.all(data_sources).then(function([borders,schooldata,pricedata]){
+
+            // Simple
+            var data = [0, 0.005, 0.01, 0.015, 0.02, 1.0];
+            //Store Weight
+            var weight= localStorage.getItem('test');
+            if (weight == null);
+              weight == .5
+
+
+
+            var pmax = d3.max(pricedata.map(x=>+x["curr_price"]))
+            var pmin = d3.min(pricedata.map(x=>+x["curr_price"]))
+            // Store budget
+            var budget = localStorage.getItem('budget');
+            if (budget == null);
+              budget = pmax
+
+          // First Slider
+            var pdata = [pmin, pmax]
+            var sliderSimple = d3
+              .sliderBottom()
+              .min(d3.min(data))
+              .max(d3.max(data))
+              .width(300)
+              .tickFormat(d3.format('.0%'))
+              .ticks(5)
+              .default(budget)
+              .on('onchange', val => {
+                d3.select('p#value-simple').text(d3.format('.0%')(val));
+                weight = val*2
+                localStorage.setItem('test',((weight/2)+.6));
+              });
+
+            var gSimple = d3
+              .select('div#slider-simple')
+              .append('svg')
+              .attr('width', 500)
+              .attr('height', 100)
+              .append('g')
+              .attr('transform', 'translate(20,30)');
+
+            gSimple.call(sliderSimple);
+
+
+
+
+
+
+
+
+            // Budget Slider
+
+            var sliderStep = d3
+              .sliderBottom()
+              .min(pmin)
+              .max(pmax)
+              .width(300)
+              // .tickFormat(d3.format('.0'))
+              .ticks(5)
+              .step(5000)
+              .default(pmax)
+              .on('onchange', val => {
+                d3.select('p#value-step').text((val));
+                localStorage.setItem('budget',val);
+                setBudget = 1
+              });
+
+            var gStep = d3
+              .select('div#slider-step')
+              .append('svg')
+              .attr('width', 500)
+              .attr('height', 100)
+              .append('g')
+              .attr('transform', 'translate(30,30)');
+
+            gStep.call(sliderStep);
+
+            d3.select('p#value-step').text(d3.format('.2%')(sliderStep.value()));
+
+
+            //Transform function to switch between D3 coordinates and Leaflet map coordinates
+            function projectPoint(x, y) {
+                var point = map.latLngToLayerPoint(new L.LatLng(y, x));
+                this.stream.point(point.x, point.y);
+            }
+            var transform = d3.geoTransform({point: projectPoint}),
+                path = d3.geoPath().projection(transform);
+
+
+            //Create color scaler for school rating
+            //school_ratings is array of form [{key: district, value: rating}, ...]
+            var school_ratings = d3.nest()
+                        .key(function(d) { return d.school_dist_code; })
+                        .rollup(function(d) {return d3.mean(d, function(v){return +v["Rate"]});})
+                        .entries(schooldata);
+
+          // Neighborhood prices
+
+
+            var school_ratings_values = school_ratings.map(x=>+x["value"]);
+            const school_cScale = d3.scaleSequential()
+                .domain([d3.min(school_ratings_values),d3.max(school_ratings_values)])
+                .interpolator(d3.interpolateRdYlGn);
+
+            //Create color scaler for price data
+            //Log scaler for raw price data
+            //Feed log output to color scaler for log color scale
+
+            var prices = pricedata.map(x=>+x["curr_price"]);
+            var price_guide = pricedata.map(x=>x['Region']);
+            var sqft = pricedata.map(x=>x['sqft']);
+
+
+
+
+
+
+            var rankings = []
+
+
+            var logScale = d3.scaleLog()
+                .domain([d3.min(prices),d3.max(prices)]);
+
+            var price_cScale = d3.scaleSequential()
+                .domain([logScale(d3.max(prices)),logScale(d3.min(prices))])
+                .interpolator(d3.interpolateRdYlGn);
+
+
+
+            //Scalers to rate schools and houses on a 0.1 to 1.0 scale i.e. normalized 1 to 10 scale
+            var rate_school =  d3.scaleLinear()
+                                .domain([d3.min(school_ratings_values),d3.max(school_ratings_values)])
+                                .range([0.001,1]);
+
+            var rate_house = d3.scaleLinear()
+                                .domain([d3.max(prices),d3.min(prices)])
+                                .range([0.001,1]);
+
+
+                                const rate_house2 = d3.scaleLinear()
+                                                    .domain([d3.max(prices),d3.min(prices)])
+                                                    .range([0.001,1]);
+            //Scaler for combined data
+            //Get neighborhoods and school districts for each region. Return array of strings in form "neigh_school"
+            var combined_keys = d3.map(borders.features, function(d){return d.properties.neighborhood+'_'+d.properties.school_district});
+            //Get combined score for each region
+
+
+            var combined = combined_keys.keys().map(
+                function(d){
+                    var keys = d.split('_');
+                    var school_val = rate_school(school_ratings.filter(x=>x.key==keys[1]).map(x=>+x.value)[0]);
+                    var house_val = rate_house(pricedata.filter(x=>x.Region==keys[0]).map(x=>+x['curr_price'])[0]);
+
+
+                                   var house_val2 = (pricedata.filter(x=>x.Region==keys[0]).map(x=>+x['curr_price'])[0])
+                                    if (setBudget == 1){
+                                      if (house_val2>budget){
+                                        console.log(houseval3)}
+                                        var houseval3 = (house_val2*(house_val2/budget))
+
+                                    houseval3 = rate_house2(houseval3)
+                                      console.log(houseval3)}
+                                      else{houseval3 = rate_house2(house_val2)
+                                    }
+                                  var rating = (school_val*weight)*(houseval3*.5)
+                                    rankings.push({score:rating, name:keys[0]})
+                    return (school_val*weight)*(house_val*.5);
+
+                });
+            //Get scaler
+            var comb_cScale = d3.scaleSequential()
+                .domain([d3.min(combined),d3.max(combined)])
+                .interpolator(d3.interpolateRdYlGn);
+
+
+
+
+
+
+
+            //Global variables for tip. Set in mouseover handler.
+            var curr_school = '';
+            var curr_neigh = '';
+            var sr = '';
+            var hr = '';
+            var score = ''
+            var price = '';
+            //Set up tip
+            // TODO: Move tip when map pans, probably need to handle in reset() function
+            var float_formatter = d3.format(".1f"); //Format floats to 1 decimal
+
+            var tip = d3.tip()
+                .attr('class', 'd3-tip')
+                .offset([-20, 0])
+                .html(function(d) {
+                  return "<span>School District: "+curr_school+
+                    "<br>Neighborhood: "+curr_neigh+
+                    "<br>School Rating: "+float_formatter(sr)+
+                    "<br>Home Value: "+float_formatter(hr)+
+                     "<br>Score: "+float_formatter(price)+
+                    "</span>";
+                });
+            svg.call(tip);
+
+
+
+            //Draw regions with D3 and add interactivity
+
+
+            var feature = g.selectAll("path")
+                .data(borders.features)
+                .enter()
+                .append("path")
+
+                .attr("fill",function(d){
+                    //Color each region based on school rating/housing price
+                    d3.select(this).attr('fill-opacity',0.8);
+                    var neighborhood = d.properties.neighborhood;
+                    var district = d.properties.school_district;
+
+                    var school_rating = school_ratings.filter(x=>x.key==district).map(x=>+x.value)[0];
+                    var price = d3.mean(pricedata.filter(x=>x.Region==neighborhood).map(x=>+x["curr_price"]));
+
+                    //var color = price_cScale(logScale(price));
+                    //var color = school_cScale(school_rating);
+                    var color = comb_cScale(rate_school(school_rating)*rate_house(price));
+                    var score = comb_cScale(rate_school(school_rating)*rate_house(price));
+
+                    if (typeof price == 'undefined') {
+                        //Make missing data regions invisible and unselectable
+                        d3.select(this).attr('fill-opacity',0.0);
+                        d3.select(this).attr("pointer-events", "none");
+                    }
+                    return color;
+
+
+                })
+
+                .on('mouseover',function(d){
+                    //Highlight border and print info
+                    curr_neigh = d.properties.neighborhood;
+                    curr_school = d.properties.school_district;
+
+                    var rating = school_ratings.filter(x=>x.key==curr_school).map(x=>x.value)[0];
+                    var price = d3.mean(pricedata.filter(x=>x.Region==curr_neigh).map(x=>+x["curr_price"]));
+                    var sqft = pricedata.filter(x=>x.key==curr_neigh).map(x=>x.value[1]);
+
+
+                    sr = rate_school(rating);
+                    hr = rate_house(price);
+                    score = sr*hr;
+                    sqft = sqft
+                    price = price
+                    d3.select(this).attr('stroke','Blue').attr('stroke-width',5);
+                    tip.show();
+
+
+                })
+                .on('mouseout',function(d){
+                    //Unhighlight border
+                   d3.select(this).attr('stroke','Black').attr('stroke-width',0);
+                   tip.hide();
+                });
+
+            //Load data to regions
+            feature.attr("d", path);
+
+            rankings.sort((a, b) => (a.score < b.score) ? 1 : -1)
+
+            d3.select('p#score1').text((rankings[0].name));
+            d3.select('p#score2').text((rankings[1].name));
+            d3.select('p#score3').text((rankings[2].name));
+            d3.select('p#score4').text((rankings[3].name));
+            d3.select('p#score5').text((rankings[4].name));
+
+
+
+
+
+            //Code to handle zooming and panning
+            map.on("viewreset", reset);
+            reset();
+
+            //Reposition the SVG to cover the features.
+            function reset() {
+                var bounds = path.bounds(borders),
+                    topLeft = bounds[0],
+                    bottomRight = bounds[1];
+
+                svg.attr("width", bottomRight[0] - topLeft[0])
+                    .attr("height", bottomRight[1] - topLeft[1])
+                    .style("left", topLeft[0] + "px")
+                    .style("top", topLeft[1] + "px");
+
+                g.attr("transform", "translate(" + -topLeft[0] + "," + -topLeft[1] + ")");
+
+                feature.attr("d", path);
+
+            }
+
+        });
+
+
+
+
+
+
+
+
+// Rerun map when refresh button
+
+function MapMake(){
+
+    var svg = d3.select(map.getPanes().overlayPane).append("svg"),
+        g = svg.append("g").attr("class", "leaflet-zoom-hide");
+
+    //Load data
+    var data_sources = [
+        d3.json("./data/borders.json"),
+        d3.dsv(",", "./data/school_quality_rating.csv"),
+        d3.dsv(",", "./data/pricedata.csv"),
+    ]
+    Promise.all(data_sources).then(function([borders,schooldata,pricedata]){
+
+        // Simple
+        var data = [0, 0.005, 0.01, 0.015, 0.02, 1.0];
+        var rankings = []
+        var weight= localStorage.getItem('test');
+        var budget = localStorage.getItem('budget');
+
+        if (weight == null);
+          weight == .5
+
+
+        //Transform function to switch between D3 coordinates and Leaflet map coordinates
+        function projectPoint(x, y) {
+            var point = map.latLngToLayerPoint(new L.LatLng(y, x));
+            this.stream.point(point.x, point.y);
+        }
+        var transform = d3.geoTransform({point: projectPoint}),
+            path = d3.geoPath().projection(transform);
+
+
+        //Create color scaler for school rating
+        //school_ratings is array of form [{key: district, value: rating}, ...]
+        var school_ratings = d3.nest()
+                    .key(function(d) { return d.school_dist_code; })
+                    .rollup(function(d) {return d3.mean(d, function(v){return +v["Rate"]});})
+                    .entries(schooldata);
+
+        var school_ratings_values = school_ratings.map(x=>+x["value"]);
+        const school_cScale = d3.scaleSequential()
+            .domain([d3.min(school_ratings_values),d3.max(school_ratings_values)])
+            .interpolator(d3.interpolateRdYlGn);
+
+        //Create color scaler for price data
+        //Log scaler for raw price data
+        //Feed log output to color scaler for log color scale
+        var prices = pricedata.map(x=>+x["curr_price"]);
+        const logScale = d3.scaleLog()
+            .domain([d3.min(prices),d3.max(prices)]);
+
+        var price_cScale = d3.scaleSequential()
+            .domain([logScale(d3.max(prices)),logScale(d3.min(prices))])
+            .interpolator(d3.interpolateRdYlGn);
+
+        //Scalers to rate schools and houses on a 0.1 to 1.0 scale i.e. normalized 1 to 10 scale
+        const rate_school =  d3.scaleLinear()
+                            .domain([d3.min(school_ratings_values),d3.max(school_ratings_values)])
+                            .range([0.001,1]);
+
+        const rate_house = d3.scaleLinear()
+                            .domain([d3.max(prices),d3.min(prices)])
+                            .range([0.001,1]);
+
+
+        const rate_house2 = d3.scaleLinear()
+                            .domain([d3.max(prices),d3.min(prices)])
+                            .range([0.001,1]);
+
+        //Scaler for combined data
+        //Get neighborhoods and school districts for each region. Return array of strings in form "neigh_school"
+        var combined_keys = d3.map(borders.features, function(d){return d.properties.neighborhood+'_'+d.properties.school_district});
+        //Get combined score for each region
+
+        var combined = combined_keys.keys().map(
+            function(d){
+                var keys = d.split('_');
+                var school_val = rate_school(school_ratings.filter(x=>x.key==keys[1]).map(x=>+x.value)[0]);
+                var house_val = rate_house(pricedata.filter(x=>x.Region==keys[0]).map(x=>+x['curr_price'])[0]);
+
+
+
+               var house_val2 = (pricedata.filter(x=>x.Region==keys[0]).map(x=>+x['curr_price'])[0])
+                if (setBudget == 1){
+                  if (house_val2>budget){
+                    }
+
+                    var houseval3 = (house_val2*(house_val2/budget))
+                    houseval3 = rate_house2(houseval3)
+
+              }
+                  else{houseval3 = rate_house2(house_val2)
+                }
+
+              var rating = (school_val*weight)*(houseval3*.5)
+
+
+                rankings.push({score:rating, name:keys[0]})
+                return (school_val*weight)*(house_val*(.5));
+
+            });
+        //Get scaler
+        var comb_cScale = d3.scaleSequential()
+            .domain([d3.min(combined),d3.max(combined)])
+            .interpolator(d3.interpolateRdYlGn);
+
+
+        //Global variables for tip. Set in mouseover handler.
+        var curr_school = '';
+        var curr_neigh = '';
+        var sr = '';
+        var hr = '';
+        var score = ''
+
+        //Set up tip
+        // TODO: Move tip when map pans, probably need to handle in reset() function
+        var float_formatter = d3.format(".1f"); //Format floats to 1 decimal
+
+        var tip = d3.tip()
+            .attr('class', 'd3-tip')
+            .offset([-20, 0])
+            .html(function(d) {
+              return "<span>School District: "+curr_school+
+                "<br>Neighborhood: "+curr_neigh+
+                "<br>School Rating: "+float_formatter(sr)+
+                "<br>Home Value: "+float_formatter(hr)+
+                "<br>Score: "+float_formatter(score)+
+                "</span>";
+            });
+        svg.call(tip);
+
+        //Draw regions with D3 and add interactivity
+
+        var feature = g.selectAll("path")
+            .data(borders.features)
+            .enter()
+            .append("path")
+
+            .attr("fill",function(d){
+                //Color each region based on school rating/housing price
+                d3.select(this).attr('fill-opacity',0.8);
+                var neighborhood = d.properties.neighborhood;
+                var district = d.properties.school_district;
+
+                var school_rating = school_ratings.filter(x=>x.key==district).map(x=>+x.value)[0];
+                var price = d3.mean(pricedata.filter(x=>x.Region==neighborhood).map(x=>+x["curr_price"]));
+
+
+                if (setBudget == 1){
+                  if (price>budget)
+                  price = (budget + (budget-price))
+                }
+
+                var color = comb_cScale(rate_school(school_rating)*rate_house(price));
+
+                if (typeof price == 'undefined') {
+                    //Make missing data regions invisible and unselectable
+                    d3.select(this).attr('fill-opacity',0.0);
+                    d3.select(this).attr("pointer-events", "none");
+                }
+                return color;
+
+
+            })
+
+            .on('mouseover',function(d){
+                //Highlight border and print info
+                curr_neigh = d.properties.neighborhood;
+                curr_school = d.properties.school_district;
+
+                var rating = school_ratings.filter(x=>x.key==curr_school).map(x=>x.value)[0];
+                var price = d3.mean(pricedata.filter(x=>x.Region==curr_neigh).map(x=>+x["curr_price"]));
+
+                sr = rate_school(rating);
+                hr = rate_house(price);
+                score = sr*hr;
+
+
+
+                d3.select(this).attr('stroke','Blue').attr('stroke-width',5);
+                tip.show();
+
+
+            })
+            .on('mouseout',function(d){
+                //Unhighlight border
+               d3.select(this).attr('stroke','Black').attr('stroke-width',0);
+               tip.hide();
+            });
+
+        //Load data to regions
+        feature.attr("d", path);
+       rankings.sort((a, b) => (a.score < b.score) ? 1 : -1)
+        d3.select('p#score1').text((rankings[0].name));
+        d3.select('p#score2').text((rankings[1].name));
+        d3.select('p#score3').text((rankings[2].name));
+        d3.select('p#score4').text((rankings[3].name));
+        d3.select('p#score5').text((rankings[4].name));
+
+
+
+        //Code to handle zooming and panning
+        map.on("viewreset", reset);
+        reset();
+
+        //Reposition the SVG to cover the features.
+        function reset() {
+            var bounds = path.bounds(borders),
+                topLeft = bounds[0],
+                bottomRight = bounds[1];
+
+            svg.attr("width", bottomRight[0] - topLeft[0])
+                .attr("height", bottomRight[1] - topLeft[1])
+                .style("left", topLeft[0] + "px")
+                .style("top", topLeft[1] + "px");
+
+            g.attr("transform", "translate(" + -topLeft[0] + "," + -topLeft[1] + ")");
+
+            feature.attr("d", path);
+
+        }
+console.log(rankings)
+    })};
+
+
+</script>
+
+</body>
+</html>
